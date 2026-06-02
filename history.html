@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan History - Plant Doctor AI</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 40px 20px; color: #ffffff;
+            background-image: linear-gradient(rgba(0, 15, 5, 0.7), rgba(0, 15, 5, 0.9)), url('https://images.unsplash.com/photo-1536147116438-62679a5e01f2?q=80&w=2000&auto=format&fit=crop');
+            background-size: cover; background-position: center; background-attachment: fixed;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            position: absolute; top: 30px; right: 40px;
+            display: flex; gap: 20px;
+            background: rgba(20, 30, 25, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            padding: 12px 25px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .navbar a {
+            color: #b0bec5; text-decoration: none; font-weight: 600; font-size: 15px; transition: 0.3s;
+        }
+        .navbar a:hover, .navbar a.active { color: #69f0ae; }
+
+        /* History Card */
+        .glass-card {
+            background: rgba(20, 30, 25, 0.65); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); max-width: 650px; width: 100%;
+        }
+
+        h1 { color: #a5d6a7; margin-bottom: 25px; font-size: 28px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;}
+        
+        .history-item { 
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); 
+            background: rgba(0,0,0,0.2); border-radius: 12px; margin-bottom: 15px;
+            transition: transform 0.2s;
+        }
+        .history-item:hover { transform: translateX(5px); background: rgba(0,0,0,0.4); }
+        .history-item:last-child { margin-bottom: 0; }
+        
+        .hist-disease { font-weight: 700; font-size: 18px; display: block; margin-bottom: 4px;}
+        .hist-conf { color: #b0bec5; font-size: 13px; font-weight: 500;}
+        .hist-time { color: #78909c; font-size: 13px; text-align: right;}
+        
+        #empty-state { text-align: center; color: #b0bec5; padding: 20px; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="/">Scanner</a>
+        <a href="/analysis_page">Deep Analysis</a>
+        <a href="/history_page" class="active">Recent Scans</a>
+    </nav>
+
+    <div class="glass-card">
+        <h1>Diagnostic History</h1>
+        <div id="history-list">
+            <div id="empty-state">Loading your recent scans...</div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = async function() {
+            try {
+                const response = await fetch('/history');
+                const history = await response.json();
+                const list = document.getElementById('history-list');
+                
+                if (history.length === 0) {
+                    list.innerHTML = '<div id="empty-state">No scans found. Head to the Scanner to analyze a leaf!</div>';
+                    return;
+                }
+                
+                list.innerHTML = ''; // Clear loading text
+                
+                history.forEach(item => {
+                    const color = item.disease.toLowerCase().includes('healthy') ? '#b9f6ca' : '#ff8a80';
+                    list.innerHTML += `
+                        <div class="history-item">
+                            <div>
+                                <span class="hist-disease" style="color: ${color}">${item.disease}</span>
+                                <span class="hist-conf">${item.confidence}% Match Confidence</span>
+                            </div>
+                            <div class="hist-time">Scanned on:<br>${item.time}</div>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                document.getElementById('history-list').innerHTML = '<div id="empty-state" style="color: #ff8a80;">Could not connect to the database.</div>';
+            }
+        };
+    </script>
+</body>
+</html>

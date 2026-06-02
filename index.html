@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Plant Disease Diagnostics</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 40px 20px; color: #ffffff;
+            background-image: linear-gradient(rgba(0, 15, 5, 0.7), rgba(0, 15, 5, 0.9)), url('https://images.unsplash.com/photo-1536147116438-62679a5e01f2?q=80&w=2000&auto=format&fit=crop');
+            background-size: cover; background-position: center; background-attachment: fixed;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            position: absolute; top: 30px; right: 40px;
+            display: flex; gap: 20px;
+            background: rgba(20, 30, 25, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            padding: 12px 25px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .navbar a {
+            color: #b0bec5; text-decoration: none; font-weight: 600; font-size: 15px; transition: 0.3s;
+        }
+        .navbar a:hover, .navbar a.active { color: #69f0ae; }
+
+        /* Main Card */
+        .glass-card {
+            background: rgba(20, 30, 25, 0.65); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); max-width: 500px; width: 100%; text-align: center;
+        }
+
+        h1 { color: #a5d6a7; margin-bottom: 5px; font-size: 28px;}
+        p { color: #b0bec5; font-size: 14px; margin-bottom: 25px; }
+
+        .upload-area {
+            border: 2px dashed rgba(165, 214, 167, 0.4); border-radius: 16px; padding: 30px;
+            background-color: rgba(0, 0, 0, 0.2); cursor: pointer; transition: all 0.3s;
+        }
+        .upload-area:hover { border-color: #69f0ae; background-color: rgba(76, 175, 80, 0.1); }
+        input[type="file"] { display: none; }
+        .upload-label { color: #69f0ae; font-weight: 500; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .upload-label svg { width: 45px; fill: #69f0ae; }
+        
+        #preview { max-width: 100%; max-height: 250px; margin-top: 15px; border-radius: 12px; display: none; }
+
+        /* Primary Action Button */
+        .primary-btn {
+            background: linear-gradient(135deg, #00b09b, #96c93d); color: #000; border: none; padding: 15px 30px;
+            border-radius: 50px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 25px; display: none;
+            transition: transform 0.2s, box-shadow 0.2s; font-size: 16px;
+        }
+        .primary-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(150, 201, 61, 0.4); }
+
+        .loader {
+            display: none; width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid #69f0ae; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Result Section */
+        #result-container { display: none; margin-top: 25px; text-align: left; background: rgba(0,0,0,0.3); padding: 25px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .result-header { display: flex; justify-content: space-between; align-items: center; }
+        .disease-name { font-size: 22px; font-weight: 700; color: #ff8a80; }
+        .healthy-name { font-size: 22px; font-weight: 700; color: #b9f6ca; }
+        .confidence { background: rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;}
+        
+        /* Secondary Action Button (Treatment Toggle) */
+        .secondary-btn {
+            background: transparent; color: #69f0ae; border: 2px solid #69f0ae; padding: 12px 20px;
+            border-radius: 50px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 20px;
+            transition: all 0.3s; font-size: 14px;
+        }
+        .secondary-btn:hover { background: rgba(105, 240, 174, 0.1); }
+
+        /* Hidden Treatment Details */
+        #treatment-details { display: none; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; }
+        .info-block { margin-bottom: 15px; }
+        .info-block h3 { font-size: 13px; color: #a5d6a7; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .info-block p { font-size: 14px; color: #eceff1; margin-bottom: 0; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="/" class="active">Scanner</a>
+        <a href="/analysis_page">Deep Analysis</a>
+        <a href="/history_page">Recent Scans</a>
+    </nav>
+
+    <div class="glass-card">
+        <h1>Plant Doctor AI</h1>
+        <p>Advanced neural diagnostics for your crops.</p>
+
+        <div class="upload-area" onclick="document.getElementById('imageInput').click()">
+            <label class="upload-label">
+                <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.36 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                <span>Tap to Upload Leaf Image</span>
+            </label>
+            <input type="file" id="imageInput" accept="image/*" onchange="previewImage(event)">
+            <img id="preview" alt="Leaf Preview">
+        </div>
+
+        <button onclick="uploadImage()" id="predictBtn" class="primary-btn">Run Diagnostic</button>
+        <div class="loader" id="loader"></div>
+        
+        <div id="result-container">
+            <div class="result-header">
+                <div id="res-disease" class="disease-name"></div>
+                <div id="res-confidence" class="confidence"></div>
+            </div>
+            
+            <button id="viewTreatmentBtn" class="secondary-btn" onclick="toggleTreatment()">View Treatment Options</button>
+
+            <div id="treatment-details">
+                <div class="info-block">
+                    <h3>Recommended Action</h3>
+                    <p id="res-treatment"></p>
+                </div>
+                <div class="info-block">
+                    <h3>Prevention</h3>
+                    <p id="res-prevention"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function() {
+                document.getElementById('preview').src = reader.result;
+                document.getElementById('preview').style.display = 'block';
+                document.querySelector('.upload-label').style.display = 'none'; 
+                document.getElementById('predictBtn').style.display = 'block';
+                document.getElementById('result-container').style.display = 'none';
+                
+                // Reset treatment section for new images
+                document.getElementById('treatment-details').style.display = 'none';
+                document.getElementById('viewTreatmentBtn').innerText = 'View Treatment Options';
+                document.getElementById('viewTreatmentBtn').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function uploadImage() {
+            const fileInput = document.getElementById('imageInput');
+            if (fileInput.files.length === 0) return;
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            document.getElementById('predictBtn').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('result-container').style.display = 'none';
+
+            try {
+                const response = await fetch('/predict', { method: 'POST', body: formData });
+                const data = await response.json();
+                
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('predictBtn').style.display = 'block';
+
+                if (!data.error) {
+                    document.getElementById('result-container').style.display = 'block';
+                    
+                    const title = document.getElementById('res-disease');
+                    title.innerText = data.prediction;
+                    title.className = data.prediction.toLowerCase().includes('healthy') ? 'healthy-name' : 'disease-name';
+                    
+                    document.getElementById('res-confidence').innerText = data.confidence + '% Match';
+                    document.getElementById('res-treatment').innerText = data.treatment;
+                    document.getElementById('res-prevention').innerText = data.prevention;
+                    
+                    // If healthy, hide the treatment button entirely (no treatment needed)
+                    if(data.prediction.toLowerCase().includes('healthy')) {
+                        document.getElementById('viewTreatmentBtn').style.display = 'none';
+                        document.getElementById('treatment-details').style.display = 'block';
+                    }
+                } else {
+                    alert("Error: " + data.error);
+                }
+            } catch (error) {
+                alert("Server Connection Failed.");
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('predictBtn').style.display = 'block';
+            }
+        }
+
+        function toggleTreatment() {
+            const details = document.getElementById('treatment-details');
+            const btn = document.getElementById('viewTreatmentBtn');
+            
+            if (details.style.display === 'none') {
+                details.style.display = 'block';
+                btn.innerText = 'Hide Treatment Options';
+            } else {
+                details.style.display = 'none';
+                btn.innerText = 'View Treatment Options';
+            }
+        }
+    </script>
+</body>
+</html>

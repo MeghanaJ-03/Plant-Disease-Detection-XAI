@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Analysis - Plant Doctor AI</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 40px 20px; color: #ffffff;
+            background-image: linear-gradient(rgba(0, 15, 5, 0.7), rgba(0, 15, 5, 0.9)), url('https://images.unsplash.com/photo-1536147116438-62679a5e01f2?q=80&w=2000&auto=format&fit=crop');
+            background-size: cover; background-position: center; background-attachment: fixed;
+        }
+
+        .navbar {
+            position: absolute; top: 30px; right: 40px;
+            display: flex; gap: 20px;
+            background: rgba(20, 30, 25, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            padding: 12px 25px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .navbar a { color: #b0bec5; text-decoration: none; font-weight: 600; font-size: 15px; transition: 0.3s; }
+        .navbar a:hover, .navbar a.active { color: #69f0ae; }
+
+        .glass-card {
+            background: rgba(20, 30, 25, 0.65); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); max-width: 900px; width: 100%; text-align: center;
+        }
+
+        h1 { color: #a5d6a7; margin-bottom: 5px; font-size: 28px;}
+        p { color: #b0bec5; font-size: 14px; margin-bottom: 30px; }
+
+        .analysis-container {
+            display: flex; gap: 30px; justify-content: center; flex-wrap: wrap; margin-top: 20px;
+        }
+
+        .image-box {
+            background: rgba(0,0,0,0.3); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);
+            flex: 1; min-width: 300px;
+        }
+
+        .image-box h3 { color: #69f0ae; font-size: 16px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;}
+        
+        .image-box img {
+            max-width: 100%; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .result-bar {
+            margin-top: 30px; background: rgba(0,0,0,0.4); padding: 15px 25px; border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .disease-name { font-size: 20px; font-weight: 700; color: #ff8a80; }
+        .healthy-name { font-size: 20px; font-weight: 700; color: #b9f6ca; }
+
+        #empty-state { color: #b0bec5; padding: 40px; font-style: italic; display: none; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="/">Scanner</a>
+        <a href="/analysis_page" class="active">Deep Analysis</a>
+        <a href="/history_page">Recent Scans</a>
+    </nav>
+
+    <div class="glass-card">
+        <h1>Grad-CAM Analysis</h1>
+        <p>Visualizing where the neural network focused to make its diagnosis.</p>
+
+        <div id="content">
+            <div class="analysis-container">
+                <div class="image-box">
+                    <h3>Original Image</h3>
+                    <img id="orig-img" src="" alt="Original Upload">
+                </div>
+                <div class="image-box">
+                    <h3>AI Focus Heatmap</h3>
+                    <img id="heatmap-img" src="" alt="Grad-CAM Heatmap">
+                </div>
+            </div>
+
+            <div class="result-bar">
+                <div>
+                    <span id="res-disease" class="disease-name"></span>
+                </div>
+                <div style="text-align: right;">
+                    <span style="color: #b0bec5; font-size: 12px;">Confidence</span><br>
+                    <strong id="res-conf" style="color: #69f0ae;"></strong>
+                </div>
+            </div>
+        </div>
+
+        <div id="empty-state">No recent scan to analyze. Please run a diagnostic first.</div>
+    </div>
+
+    <script>
+        window.onload = async function() {
+            try {
+                const response = await fetch('/latest_analysis');
+                const data = await response.json();
+                
+                if (data.error) {
+                    document.getElementById('content').style.display = 'none';
+                    document.getElementById('empty-state').style.display = 'block';
+                    return;
+                }
+                
+                document.getElementById('orig-img').src = data.original_image;
+                document.getElementById('heatmap-img').src = data.gradcam_image;
+                
+                const title = document.getElementById('res-disease');
+                title.innerText = data.disease;
+                title.className = data.disease.toLowerCase().includes('healthy') ? 'healthy-name' : 'disease-name';
+                
+                document.getElementById('res-conf').innerText = data.confidence + '%';
+                
+            } catch (error) {
+                console.error("Error loading analysis data:", error);
+            }
+        };
+    </script>
+</body>
+</html>
